@@ -45,6 +45,7 @@ public class DomainSpecCodeGenerator extends MavenCodeGenSpi {
                     .collect(Collectors.groupingBy(s -> s.get("kind").getAsString()));
             map.entrySet().stream().filter(e -> e.getKey().equals("Type")).flatMap(s -> s.getValue().stream()).forEach(json -> getGenerator(Util.getElStr("apiVersion", json)).orElseThrow().resolveTypeGen(json));
             map.entrySet().stream().filter(e -> e.getKey().equals("Field")).flatMap(s -> s.getValue().stream()).forEach(json -> getGenerator(Util.getElStr("apiVersion", json)).orElseThrow().resolveFieldGen(json));
+            map.entrySet().stream().filter(e -> e.getKey().equals("Command")).flatMap(s -> s.getValue().stream()).forEach(json -> getGenerator(Util.getElStr("apiVersion", json)).orElseThrow().resolveCommandGen(json));
             map.entrySet().stream().filter(e -> e.getKey().equals("Entity")).flatMap(s -> s.getValue().stream()).forEach(json -> getGenerator(Util.getElStr("apiVersion", json)).orElseThrow().resolveEntityGen(json));
             map.entrySet().stream().filter(e -> e.getKey().equals("Event")).flatMap(s -> s.getValue().stream()).forEach(json -> getGenerator(Util.getElStr("apiVersion", json)).orElseThrow().resolveEventGen(json));
             mapGen.values().forEach(gen -> gen.execute());
@@ -56,27 +57,31 @@ public class DomainSpecCodeGenerator extends MavenCodeGenSpi {
     public String getSpecPackageName() {
         return getProperty("specNamespace", "");
     }
-    
+
     public String getChildEntityBaseName() {
         return getProperty("childEntityBase", "ChildEntity");
     }
-    
+
     public String getEntityBaseName() {
         return getProperty("entityBase", "Entity");
+    }
+
+    public String getCommandBaseName() {
+        return getProperty("commandBase", "Command");
     }
 
     public String getRootEntityBaseName() {
         return getProperty("rootEntityBase", "RootEntity");
     }
-    
+
     public String getEventBaseName() {
         return getProperty("eventBase", "Event");
     }
 
-    public String getTenantBaseName(){
+    public String getTenantBaseName() {
         return getProperty("tenantBase", "ITenant");
     }
-    
+
     public static List<String> getAllSpecFiles(String path) throws IOException {
         try (Stream<Path> stream = Files.walk(Path.of(path))) {
             return stream.filter(p -> p.toString().endsWith(".yaml")).map(p -> p.toFile().getAbsolutePath()).collect(Collectors.toList());
@@ -88,8 +93,11 @@ public class DomainSpecCodeGenerator extends MavenCodeGenSpi {
     }
 
     @Override
-    public String getCodeGenFolder()
-    {
-        return getProject().getSourceDir();
+    public String getCodeGenFolder() {
+        String domainLocation = getProperty("domainLocation", null);
+        if (domainLocation == null) {
+            throw new RuntimeException("domainLocation not defined");
+        }
+        return domainLocation;
     }
 }

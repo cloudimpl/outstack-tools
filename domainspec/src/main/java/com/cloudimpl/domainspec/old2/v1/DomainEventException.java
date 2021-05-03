@@ -3,13 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.cloudimpl.domainspec.v1;
+package com.cloudimpl.domainspec.old2.v1;
 
 /**
  *
  * @author nuwan
  */
-public interface IResource {
-    String getRN();
-    String getTRN();
+public class DomainEventException extends RuntimeException{
+
+    public DomainEventException(String message) {
+        super(message);
+    }
+    
 }

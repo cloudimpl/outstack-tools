@@ -3,13 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.cloudimpl.domainspec.v1;
+package com.cloudimpl.domainspec.old.v1;
 
 /**
  *
  * @author nuwan
  */
-public interface IResource {
-    String getRN();
-    String getTRN();
+public interface ITenant {
+    String getTenantId();
 }

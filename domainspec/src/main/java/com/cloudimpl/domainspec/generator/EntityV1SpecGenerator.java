@@ -6,15 +6,18 @@
 package com.cloudimpl.domainspec.generator;
 
 import com.cloudimpl.codegen4j.AccessLevel;
+import com.cloudimpl.codegen4j.CaseBlock;
 import com.cloudimpl.codegen4j.ClassBlock;
 import com.cloudimpl.codegen4j.ClassBuilder;
 import com.cloudimpl.codegen4j.ConstructorBlock;
 import com.cloudimpl.codegen4j.FunctionBlock;
 import com.cloudimpl.codegen4j.JavaFile;
+import com.cloudimpl.codegen4j.SwitchBlock;
 import com.cloudimpl.codegen4j.Var;
 import com.cloudimpl.domainspec.DomainEntitySpecV1;
 import com.cloudimpl.domainspec.EntitySpecDecoderV1;
 import com.cloudimpl.domainspec.EntitySpecV1;
+import com.cloudimpl.domainspec.EventSpecV1;
 import com.cloudimpl.domainspec.FieldDefRefV1;
 import com.cloudimpl.domainspec.FieldSpecV1;
 import com.cloudimpl.domainspec.GsonCodec;
@@ -86,19 +89,35 @@ public class EntityV1SpecGenerator extends SpecGenerator {
         if (!map.containsKey(template.getMetadata().getId())) {
             map.put(template.getMetadata().getId(), fieldSpec.getFieldDef(template.getMetadata().getId()).orElseThrow());
         }
+        if(template.getMetadata().isRoot() && template.getMetadata().getVersion() == null)
+        {
+            throw new RuntimeException("root entity "+template.getMetadata().getType()+" version not defined");
+        }
+        String entityVersion = template.getMetadata().getVersion();
         EntitySpecV1.Template rootTemplate = null;
-        if (!template.getMetadata().isRoot() && !map.containsKey(template.getMetadata().rootEntity().orElseThrow())) {
+//        if (!template.getMetadata().isRoot() && !map.containsKey(template.getMetadata().rootEntity().orElseThrow())) {
+//            rootTemplate = getTemplate(template.getMetadata().rootEntity().orElseThrow()).orElseThrow();
+//            map.put(rootTemplate.getMetadata().getId(), fieldSpec.getFieldDef(rootTemplate.getMetadata().getId()).orElseThrow());
+//        }
+        if(!template.getMetadata().isRoot())
+        {
             rootTemplate = getTemplate(template.getMetadata().rootEntity().orElseThrow()).orElseThrow();
-            map.put(rootTemplate.getMetadata().getId(), fieldSpec.getFieldDef(rootTemplate.getMetadata().getId()).orElseThrow());
+            if(rootTemplate.getMetadata().getVersion() == null)
+            {
+                throw new RuntimeException("root entity "+rootTemplate.getMetadata().getType()+" version not defined");
+            }
+            entityVersion = rootTemplate.getMetadata().getVersion();
         }
         ClassBuilder builder = new ClassBuilder();
         ClassBlock cb = builder.createClass(template.getMetadata().getType())
                 .withPackageName(spec.getMetaData().orElseThrow().getNamespace().orElseThrow() + template.getMetadata().getModule().map(s -> "." + s).orElse(""))
-                .implement(template.getMetadata().isRoot() ? generator.getRootEntityBaseName() : generator.getChildEntityBaseName())
+                .extend((template.getMetadata().isRoot() ? generator.getRootEntityBaseName() : generator.getChildEntityBaseName())+((rootTemplate != null)?("<"+rootTemplate.getMetadata().getType()+">"):""))
                 .withImports(template.getMetadata().isRoot() ? generator.getSpecPackageName() + "." + generator.getRootEntityBaseName() : generator.getSpecPackageName() + "." + generator.getChildEntityBaseName())
+                .withImports(generator.getSpecPackageName() + ".EntityMeta")
                 .withAccess(AccessLevel.PUBLIC);
-        createConstructor(cb, template);
-        if (template.getMetadata().isTenant()) {
+        cb.withAnnotation("EntityMeta(plural=\""+template.getMetadata().getPlural()+"\",version=\""+entityVersion+"\")");
+        createConstructor(cb, template,rootTemplate);
+        if (template.getMetadata().isTenant() || (rootTemplate != null && rootTemplate.getMetadata().isTenant())) {
             cb.implement(generator.getTenantBaseName()).withImports(generator.getSpecPackageName() + "." + generator.getTenantBaseName());
             generateTenantIdFunction(cb);
 
@@ -121,21 +140,23 @@ public class EntityV1SpecGenerator extends SpecGenerator {
             }
         });
         if (rootTemplate != null) {
-            generateRootIdFunction(cb, rootTemplate.getMetadata().getId());
+          //  generateRootIdFunction(cb, rootTemplate.getMetadata().getId());
             generateRootTypeFunction(cb, rootTemplate.getMetadata().getType());
         }
-        template.getLogic().forEach(apply -> generateApplyFunction(cb, apply));
+        generateIdFieldFunction(cb, template.getMetadata().getId());
+        template.getLogic().forEach(apply -> generateApplyEventFunction(cb,template, apply));
+        generateApplyFunction(cb, template.getLogic());
         return cb;
     }
 
-    private void createConstructor(ClassBlock cb, EntitySpecV1.Template template) {
+    private void createConstructor(ClassBlock cb, EntitySpecV1.Template template,EntitySpecV1.Template rootTemplate) {
         List<String> params = new LinkedList<>();
         template.getMetadata().rootEntity().map(s -> getTemplate(s).orElseThrow()).ifPresent(t -> {
             cb.withImports(getSpec().getTemplateNamespace(t.getMetadata()) + "." + t.getMetadata().getType());
-            params.add("String " + t.getMetadata().getId());
+            //params.add("String " + t.getMetadata().getId());
         });
         params.add("String " + template.getMetadata().getId());
-        if (template.getMetadata().isTenant()) {
+        if (template.getMetadata().isTenant() || (rootTemplate != null && rootTemplate.getMetadata().isTenant()) ) {
             params.add("String tenantId");
         }
         ConstructorBlock ctr = cb.createConstructor(params.stream().toArray(String[]::new)).withAccess(AccessLevel.PUBLIC);
@@ -145,19 +166,25 @@ public class EntityV1SpecGenerator extends SpecGenerator {
     }
 
     private void generateIdFunction(ClassBlock cb, String idField) {
-        FunctionBlock fb = cb.createFunction("id").withReturnType("String")
+        FunctionBlock fb = cb.createFunction("entityId").withReturnType("String")
                 .withAccess(AccessLevel.PUBLIC)
                 .withAnnotation(Override.class.getSimpleName());
         fb.withReturnStatment(idField).end();
     }
 
-    private void generateRootIdFunction(ClassBlock cb, String idField) {
-        FunctionBlock fb = cb.createFunction("rootId").withReturnType("String")
+//    private void generateRootIdFunction(ClassBlock cb, String idField) {
+//        FunctionBlock fb = cb.createFunction("rootEntityId").withReturnType("String")
+//                .withAccess(AccessLevel.PUBLIC)
+//                .withAnnotation(Override.class.getSimpleName());
+//        fb.withReturnStatment(idField).end();
+//    }
+
+    private void generateIdFieldFunction(ClassBlock cb, String idField) {
+        FunctionBlock fb = cb.createFunction("idField").withReturnType("String")
                 .withAccess(AccessLevel.PUBLIC)
                 .withAnnotation(Override.class.getSimpleName());
-        fb.withReturnStatment(idField).end();
+        fb.withReturnStatment("\""+idField+"\"").end();
     }
-
     private void generateRootTypeFunction(ClassBlock cb, String rootType) {
         FunctionBlock fb = cb.createFunction("rootType").withReturnType("Class<" + rootType + ">")
                 .withAccess(AccessLevel.PUBLIC)
@@ -165,17 +192,37 @@ public class EntityV1SpecGenerator extends SpecGenerator {
         fb.withReturnStatment(rootType + ".class").end();
     }
 
-    private void generateApplyFunction(ClassBlock cb, EntitySpecV1.Template.ApplyStmt apply) {
+    private void generateApplyEventFunction(ClassBlock cb,EntitySpecV1.Template template, EntitySpecV1.Template.ApplyStmt apply) {
+        EventSpecV1.Template spec = eventSpec.get().getTemplate(apply.getEvt()).orElseThrow();
+        if(!template.getMetadata().getType().equals(spec.getMetadata().getOwner()))
+        {
+            throw new RuntimeException("event "+ spec.getMetadata().getType()+" is own by "+spec.getMetadata().getOwner() + ", cannot applied to "+template.getMetadata().getType());
+        }
         cb.withImports(eventSpec.get().getSpec().getTemplateNamespace(eventSpec.get().getTemplate(apply.getEvt()).orElseThrow().getMetadata()) + "." + apply.getEvt());
-        FunctionBlock fb = cb.createFunction("apply")
+        FunctionBlock fb = cb.createFunction("applyEvent")
                 .withArgs(eventSpec.get().getTemplate(apply.getEvt()).orElseThrow().getMetadata().getType() + " evt")
-                .withAccess(AccessLevel.PUBLIC);
+                .withAccess(AccessLevel.PRIVATE);
         for (String stmt : apply.getStmt()) {
             String st = stmt.substring(0, stmt.lastIndexOf(".")) + "." + FunctionBlock.createName("get", stmt.substring(stmt.lastIndexOf(".") + 1)) + "()";
             fb.stmt().append(st).end();
         }
     }
 
+    private void generateApplyFunction(ClassBlock cb,List<EntitySpecV1.Template.ApplyStmt> applyList)
+    {
+        cb.withImports(generator.getSpecPackageName() + "." + generator.getEventBaseName());
+        cb.withImports(generator.getSpecPackageName() + ".DomainEventException");
+        FunctionBlock fb = cb.createFunction("apply").withArgs("Event event").withAccess(AccessLevel.PUBLIC).withAnnotation(Override.class.getSimpleName());
+        SwitchBlock sb = fb.createSwitch("event.getClass().getSimpleName()");
+        for(EntitySpecV1.Template.ApplyStmt stmt: applyList)
+        {
+            CaseBlock caseBlock = sb.createCase("\""+stmt.getEvt()+"\"");
+            caseBlock.stmt().append("applyEvent(("+stmt.getEvt()+") event)").end();
+            caseBlock.stmt().append("break").end();
+        }
+        sb.createDefault().stmt().append("throw new DomainEventException(\"unhandled event:\"+event.getClass().getName())").end();
+    }
+    
     private void generateTenantIdFunction(ClassBlock cb) {
         Var v = cb.var("String", "tenantId").withAccess(AccessLevel.PRIVATE).withFinal().end();
         cb.createGetter(v).withAnnotation(Override.class.getSimpleName());

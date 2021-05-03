@@ -16,7 +16,7 @@ import java.util.Optional;
  *
  * @author nuwan
  */
-public class EntitySpecV1 implements Spec {
+public class CommandSpecV1 implements Spec {
 
     private List<Template> templates = new LinkedList<>();
 
@@ -24,9 +24,9 @@ public class EntitySpecV1 implements Spec {
         return templates;
     }
 
-    public static EntitySpecV1 loadFrom(JsonArray json)
+    public static CommandSpecV1 loadFrom(JsonArray json)
     {
-        EntitySpecV1 spec = new EntitySpecV1();
+        CommandSpecV1 spec = new CommandSpecV1();
         json.forEach(el->spec.templates.add(Template.loadFrom(el.getAsJsonObject())));
         return spec;
     }
@@ -34,7 +34,6 @@ public class EntitySpecV1 implements Spec {
 
         private MetaData metdata;
         private List<FieldDefRefV1> fieldRefs = new LinkedList<>();
-        private List<ApplyStmt> logic = new LinkedList<>();
         public static Template loadFrom(JsonObject json) {
             Template template = new Template();
             JsonObject tempJson = Util.getElAsObj("template", json).orElseThrow();
@@ -42,8 +41,6 @@ public class EntitySpecV1 implements Spec {
             template.metdata = GsonCodec.decode(MetaData.class, obj.toString());
             JsonArray arr = Util.getElAsArray("fieldRefs", tempJson).orElseThrow();
             arr.forEach(el -> template.fieldRefs.add(FieldDefRefV1.loadFrom(el)));
-            JsonArray logicArr = Util.getElAsArray("logic", tempJson).orElseThrow();
-            logicArr.forEach(el->template.logic.add(ApplyStmt.loadEl(el.getAsJsonObject())));
             return template;
         }
 
@@ -53,10 +50,6 @@ public class EntitySpecV1 implements Spec {
 
         public List<FieldDefRefV1> getFieldRefs() {
             return fieldRefs;
-        }
-
-        public List<ApplyStmt> getLogic() {
-            return logic;
         }
 
         public boolean hasField(String name)
@@ -69,20 +62,11 @@ public class EntitySpecV1 implements Spec {
             return fieldRefs.stream().filter(fr->fr.getName().equals(name)).findFirst();
         }
         
-        public FieldDefRefV1 getIdFieldDef()
-        {
-            return getFieldRef(getMetadata().id).orElseThrow();
-        }
         public static final class MetaData implements DomainSpecV1.TemplateMetadata{
 
             private String type;
             private String module;
             private String name;
-            private boolean tenant;
-            private String plural;
-            private String version;
-            private String id;
-            private String rootEntity;
 
             @Override
             public String getType() {
@@ -92,58 +76,12 @@ public class EntitySpecV1 implements Spec {
             public String getName() {
                 return name;
             }
-
-            public String getPlural() {
-                return plural;
-            }
-
-            public String getVersion() {
-                return version;
-            }
-
-            public String getId() {
-                return id;
-            }
-
-            public boolean isRoot() {
-                return !rootEntity().isPresent();
-            }
-
-            public boolean isTenant() {
-                return tenant;
-            }
-
-            public Optional<String> rootEntity()
-            {
-                return Optional.ofNullable(rootEntity);
-            }
             
             @Override
             public Optional<String> getModule() {
                 return Optional.ofNullable(module);
             }
             
-            
-        }
-
-        public static final class ApplyStmt
-        {
-            private String evt;
-            private String[] stmt;
-
-            public String getEvt() {
-                return evt;
-            }
-
-            public String[] getStmt() {
-                return stmt;
-            }
-            
-            
-            public static ApplyStmt loadEl(JsonObject json)
-            {
-                return GsonCodec.decode(ApplyStmt.class, json.get("apply").toString());
-            }
             
         }
     }

@@ -92,13 +92,16 @@ public class EventV1SpecGenerator extends SpecGenerator {
                 .map(fr -> fieldSpec.getFieldDef(fr.getName()).orElseThrow().merge(fr))
                 .collect(Collectors.toMap(fd -> fd.getName(), fd -> fd));
 
+        EntitySpecV1.Template entityTemplate = this.entityGen.get().getTemplate(template.getMetadata().getOwner()).orElseThrow();
+        
         ClassBuilder builder = new ClassBuilder();
         ClassBlock cb = builder.createClass(template.getMetadata().getType())
                 .withPackageName(spec.getMetaData().orElseThrow().getNamespace().orElseThrow())
-                .implement(generator.getEventBaseName())
+                .extend(generator.getEventBaseName()+"<"+entityTemplate.getMetadata().getType()+">")
+                .withImports(generator.getSpecPackageName() + "." + generator.getEventBaseName())
                 .withImports(generator.getSpecPackageName() + "." + generator.getEventBaseName())
                 .withAccess(AccessLevel.PUBLIC);
-        EntitySpecV1.Template entityTemplate = this.entityGen.get().getTemplate(template.getMetadata().getOwner()).orElseThrow();
+        
         List<FieldDefRefV1> fieldRefs = template.getFieldRefs();
         fieldRefs.stream().map(ref -> map.get(ref.getName())).filter(fd -> fd.getNamespace().isPresent()).forEach(fd -> cb.withImports(fd.getNamespace().get() + "." + fd.getType()));
         String[] params = fieldRefs.stream().map(ref -> map.get(ref.getName())).map(fd -> fd.getType() + " " + fd.getName()).toArray(String[]::new);
@@ -157,7 +160,7 @@ public class EventV1SpecGenerator extends SpecGenerator {
         }
         else
         {
-            EntitySpecV1.Template rootTemplate = entityGen.get().getTemplate(template.getMetadata().getOwner()).orElseThrow();
+            EntitySpecV1.Template rootTemplate = entityGen.get().getTemplate(entityTemplate.getMetadata().rootEntity().orElseThrow()).orElseThrow();
             return rootTemplate.getMetadata().getId();
         }
     }

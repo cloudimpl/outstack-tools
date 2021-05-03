@@ -3,13 +3,19 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.cloudimpl.domainspec.v1;
+package com.cloudimpl.domainspec.old.v1;
+
+import java.text.MessageFormat;
 
 /**
  *
  * @author nuwan
  */
-public interface IResource {
-    String getRN();
-    String getTRN();
+public interface Entity extends IResource{
+
+    String id();
+
+    default boolean hasTenant() {
+        return this instanceof ITenant;
+    }
 }

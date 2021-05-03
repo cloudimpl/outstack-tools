@@ -16,6 +16,8 @@ public interface CodeGenerator {
     void resolveFieldGen(JsonObject json);
 
     void resolveEntityGen(JsonObject json);
+    
+    void resolveCommandGen(JsonObject json);
 
     void resolveEventGen(JsonObject json);
     

@@ -9,7 +9,6 @@ package com.cloudimpl.domainspec.v1;
  *
  * @author nuwan
  */
-public interface IResource {
-    String getRN();
-    String getTRN();
+public @interface EntityMeta {
+    String plural();
 }

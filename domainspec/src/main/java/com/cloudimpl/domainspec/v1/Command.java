@@ -7,9 +7,9 @@ package com.cloudimpl.domainspec.v1;
 
 /**
  *
- * @author nuwan
+ * @author nuwansa
  */
-public interface IResource {
-    String getRN();
-    String getTRN();
+public interface Command extends Input{
+    String commandName();
+    
 }
