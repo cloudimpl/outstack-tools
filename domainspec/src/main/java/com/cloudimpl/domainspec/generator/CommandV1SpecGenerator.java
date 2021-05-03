@@ -62,7 +62,7 @@ public class CommandV1SpecGenerator extends SpecGenerator {
 //                .flatMap(temp -> temp.getFieldRefs().stream())
 //                .map(fr -> fieldSpec.getFieldDef(fr.getName()).orElseThrow().merge(fr))
 //                .collect(Collectors.toMap(fd -> fd.getName(), fd -> fd));
-
+        if(spec != null)
         spec.getSpec().getTemplates().stream().map(temp -> createCommand(spec, temp)).forEach(this::generateFile);
 
     }

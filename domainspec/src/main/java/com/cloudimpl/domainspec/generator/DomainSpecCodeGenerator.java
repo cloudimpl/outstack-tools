@@ -39,7 +39,7 @@ public class DomainSpecCodeGenerator extends MavenCodeGenSpi {
         String resourcesFolder = getProject().getResourcesDir();
         try {
             List<String> yamls = getAllSpecFiles(resourcesFolder);
-            Map<String, List<JsonObject>> map = yamls.stream().map(p -> YamlToJsonReader.convertYamlToJson(p)).map(s -> GsonCodec.toJsonObject(s))
+            Map<String, List<JsonObject>> map = yamls.stream().peek(p->System.out.println("loading file:"+p)).map(p -> YamlToJsonReader.convertYamlToJson(p)).map(s -> GsonCodec.toJsonObject(s))
                     .filter(s -> Util.getElStr("kind", s) != null)
                     .filter(s -> Util.getElStr("apiVersion", s) != null)
                     .collect(Collectors.groupingBy(s -> s.get("kind").getAsString()));
