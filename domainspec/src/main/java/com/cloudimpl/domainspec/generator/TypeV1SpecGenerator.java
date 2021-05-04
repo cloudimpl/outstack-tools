@@ -35,8 +35,9 @@ public class TypeV1SpecGenerator extends SpecGenerator {
         GsonCodec.registerTypeAdaptor(TypeSpecV1.class, () -> new TypeSpecDecoderV1(), null);
     }
     private final FieldV1SpecGenerator fieldSpec;
-    private Map<String,TypeSpecV1.Template> templates ;
+    private Map<String, TypeSpecV1.Template> templates;
     private DomainTypeSpecV1 spec;
+
     public TypeV1SpecGenerator(DomainSpecCodeGenerator generator, FieldV1SpecGenerator fieldSpec) {
         super(generator);
         this.fieldSpec = fieldSpec;
@@ -44,29 +45,30 @@ public class TypeV1SpecGenerator extends SpecGenerator {
 
     @Override
     public void execute() {
-        templates = spec.getSpec().getTemplates().stream().collect(Collectors.toMap(t->t.getMetdata().getName(),t-> t));
-        spec.getSpec().getTemplates().stream().map(temp -> createType(spec, temp)).forEach(this::generateFile);
+        if (spec != null) {
+            templates = spec.getSpec().getTemplates().stream().collect(Collectors.toMap(t -> t.getMetdata().getName(), t -> t));
+            spec.getSpec().getTemplates().stream().map(temp -> createType(spec, temp)).forEach(this::generateFile);
+        }
 
     }
 
-     @Override
+    @Override
     public void resolve(JsonObject json) {
         spec = GsonCodec.decode(DomainTypeSpecV1.class, json.toString());
-        templates = spec.getSpec().getTemplates().stream().collect(Collectors.toMap(t->t.getMetdata().getName(),t-> t));
+        templates = spec.getSpec().getTemplates().stream().collect(Collectors.toMap(t -> t.getMetdata().getName(), t -> t));
     }
 
     public DomainTypeSpecV1 getSpec() {
         return spec;
     }
-    
-    public Optional<TypeSpecV1.Template> getTemplate(String name)
-    {
+
+    public Optional<TypeSpecV1.Template> getTemplate(String name) {
         return Optional.ofNullable(this.templates.get(name));
     }
-    
+
     private ClassBlock createObject(DomainTypeSpecV1 spec, TypeSpecV1.Template template) {
-          Map<String, FieldSpecV1.FieldDef> map = spec.getSpec().getTemplates().stream()
-                .filter(temp->temp.getMetdata().getType().equals("object"))
+        Map<String, FieldSpecV1.FieldDef> map = spec.getSpec().getTemplates().stream()
+                .filter(temp -> temp.getMetdata().getType().equals("object"))
                 .flatMap(temp -> Arrays.asList(temp.getValues()).stream())
                 .map(fr -> fieldSpec.getFieldDef(fr).orElseThrow())
                 .collect(Collectors.toMap(fd -> fd.getName(), fd -> fd));
@@ -107,5 +109,4 @@ public class TypeV1SpecGenerator extends SpecGenerator {
         file.writeTo(new File(generator.getCodeGenFolder()));
     }
 
-   
 }
