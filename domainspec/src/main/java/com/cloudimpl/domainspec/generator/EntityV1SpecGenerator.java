@@ -14,13 +14,7 @@ import com.cloudimpl.codegen4j.FunctionBlock;
 import com.cloudimpl.codegen4j.JavaFile;
 import com.cloudimpl.codegen4j.SwitchBlock;
 import com.cloudimpl.codegen4j.Var;
-import com.cloudimpl.domainspec.DomainEntitySpecV1;
-import com.cloudimpl.domainspec.EntitySpecDecoderV1;
-import com.cloudimpl.domainspec.EntitySpecV1;
-import com.cloudimpl.domainspec.EventSpecV1;
-import com.cloudimpl.domainspec.FieldDefRefV1;
-import com.cloudimpl.domainspec.FieldSpecV1;
-import com.cloudimpl.domainspec.GsonCodec;
+import com.cloudimpl.domainspec.*;
 import com.google.gson.JsonObject;
 import java.io.File;
 import java.util.LinkedList;
@@ -193,7 +187,7 @@ public class EntityV1SpecGenerator extends SpecGenerator {
     }
 
     private void generateApplyEventFunction(ClassBlock cb,EntitySpecV1.Template template, EntitySpecV1.Template.ApplyStmt apply) {
-        EventSpecV1.Template spec = eventSpec.get().getTemplate(apply.getEvt()).orElseThrow();
+        EventSpecV1.Template spec = eventSpec.get().getTemplate(apply.getEvt()).orElseThrow(() -> Util.$(apply.getEvt()));
         if(!template.getMetadata().getType().equals(spec.getMetadata().getOwner()))
         {
             throw new RuntimeException("event "+ spec.getMetadata().getType()+" is own by "+spec.getMetadata().getOwner() + ", cannot applied to "+template.getMetadata().getType());
@@ -202,9 +196,11 @@ public class EntityV1SpecGenerator extends SpecGenerator {
         FunctionBlock fb = cb.createFunction("applyEvent")
                 .withArgs(eventSpec.get().getTemplate(apply.getEvt()).orElseThrow().getMetadata().getType() + " evt")
                 .withAccess(AccessLevel.PRIVATE);
-        for (String stmt : apply.getStmt()) {
-            String st = stmt.substring(0, stmt.lastIndexOf(".")) + "." + FunctionBlock.createName("get", stmt.substring(stmt.lastIndexOf(".") + 1)) + "()";
-            fb.stmt().append(st).end();
+        if(apply.getStmt() != null) {
+            for (String stmt : apply.getStmt()) {
+                String st = stmt.substring(0, stmt.lastIndexOf(".")) + "." + FunctionBlock.createName("get", stmt.substring(stmt.lastIndexOf(".") + 1)) + "()";
+                fb.stmt().append(st).end();
+            }
         }
     }
 

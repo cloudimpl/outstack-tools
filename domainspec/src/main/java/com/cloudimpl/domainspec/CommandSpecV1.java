@@ -39,8 +39,10 @@ public class CommandSpecV1 implements Spec {
             JsonObject tempJson = Util.getElAsObj("template", json).orElseThrow();
             JsonObject obj = Util.getElAsObj("metadata", tempJson).orElseThrow();
             template.metdata = GsonCodec.decode(MetaData.class, obj.toString());
-            JsonArray arr = Util.getElAsArray("fieldRefs", tempJson).orElseThrow();
-            arr.forEach(el -> template.fieldRefs.add(FieldDefRefV1.loadFrom(el)));
+            if(tempJson.get("fieldRefs") != null) {
+                JsonArray arr = Util.getElAsArray("fieldRefs", tempJson).orElseThrow(() -> Util.$(tempJson.toString()));
+                arr.forEach(el -> template.fieldRefs.add(FieldDefRefV1.loadFrom(el)));
+            }
             return template;
         }
 
