@@ -38,4 +38,9 @@ public class Util {
             return Optional.empty();
         return Optional.of(el);
     }
+     
+     public static RuntimeException $(String error)
+     {
+         return new RuntimeException(error);
+     }
 }

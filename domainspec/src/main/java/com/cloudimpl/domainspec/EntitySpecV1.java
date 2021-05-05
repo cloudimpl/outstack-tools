@@ -24,17 +24,18 @@ public class EntitySpecV1 implements Spec {
         return templates;
     }
 
-    public static EntitySpecV1 loadFrom(JsonArray json)
-    {
+    public static EntitySpecV1 loadFrom(JsonArray json) {
         EntitySpecV1 spec = new EntitySpecV1();
-        json.forEach(el->spec.templates.add(Template.loadFrom(el.getAsJsonObject())));
+        json.forEach(el -> spec.templates.add(Template.loadFrom(el.getAsJsonObject())));
         return spec;
     }
+
     public static final class Template {
 
         private MetaData metdata;
         private List<FieldDefRefV1> fieldRefs = new LinkedList<>();
         private List<ApplyStmt> logic = new LinkedList<>();
+
         public static Template loadFrom(JsonObject json) {
             Template template = new Template();
             JsonObject tempJson = Util.getElAsObj("template", json).orElseThrow();
@@ -42,8 +43,11 @@ public class EntitySpecV1 implements Spec {
             template.metdata = GsonCodec.decode(MetaData.class, obj.toString());
             JsonArray arr = Util.getElAsArray("fieldRefs", tempJson).orElseThrow();
             arr.forEach(el -> template.fieldRefs.add(FieldDefRefV1.loadFrom(el)));
-            JsonArray logicArr = Util.getElAsArray("logic", tempJson).orElseThrow();
-            logicArr.forEach(el->template.logic.add(ApplyStmt.loadEl(el.getAsJsonObject())));
+            if (tempJson.get("logic") != null) {
+                JsonArray logicArr = Util.getElAsArray("logic", tempJson).orElseThrow();
+                logicArr.forEach(el -> template.logic.add(ApplyStmt.loadEl(el.getAsJsonObject())));
+            }
+
             return template;
         }
 
@@ -59,21 +63,19 @@ public class EntitySpecV1 implements Spec {
             return logic;
         }
 
-        public boolean hasField(String name)
-        {
+        public boolean hasField(String name) {
             return getFieldRef(name).isPresent();
         }
-        
-        public Optional<FieldDefRefV1> getFieldRef(String name)
-        {
-            return fieldRefs.stream().filter(fr->fr.getName().equals(name)).findFirst();
+
+        public Optional<FieldDefRefV1> getFieldRef(String name) {
+            return fieldRefs.stream().filter(fr -> fr.getName().equals(name)).findFirst();
         }
-        
-        public FieldDefRefV1 getIdFieldDef()
-        {
+
+        public FieldDefRefV1 getIdFieldDef() {
             return getFieldRef(getMetadata().id).orElseThrow();
         }
-        public static final class MetaData implements DomainSpecV1.TemplateMetadata{
+
+        public static final class MetaData implements DomainSpecV1.TemplateMetadata {
 
             private String type;
             private String module;
@@ -113,21 +115,19 @@ public class EntitySpecV1 implements Spec {
                 return tenant;
             }
 
-            public Optional<String> rootEntity()
-            {
+            public Optional<String> rootEntity() {
                 return Optional.ofNullable(rootEntity);
             }
-            
+
             @Override
             public Optional<String> getModule() {
                 return Optional.ofNullable(module);
             }
-            
-            
+
         }
 
-        public static final class ApplyStmt
-        {
+        public static final class ApplyStmt {
+
             private String evt;
             private String[] stmt;
 
@@ -138,13 +138,11 @@ public class EntitySpecV1 implements Spec {
             public String[] getStmt() {
                 return stmt;
             }
-            
-            
-            public static ApplyStmt loadEl(JsonObject json)
-            {
+
+            public static ApplyStmt loadEl(JsonObject json) {
                 return GsonCodec.decode(ApplyStmt.class, json.get("apply").toString());
             }
-            
+
         }
     }
 

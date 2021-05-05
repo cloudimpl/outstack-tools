@@ -19,6 +19,7 @@ import com.cloudimpl.domainspec.EventSpecV1;
 import com.cloudimpl.domainspec.FieldDefRefV1;
 import com.cloudimpl.domainspec.FieldSpecV1;
 import com.cloudimpl.domainspec.GsonCodec;
+import com.cloudimpl.domainspec.Util;
 import com.google.gson.JsonObject;
 import java.io.File;
 import java.util.List;
@@ -65,7 +66,7 @@ public class EventV1SpecGenerator extends SpecGenerator {
     }
 
     private void resolveMissingFields(EventSpecV1.Template template) {
-        EntitySpecV1.Template entityTemplate = this.entityGen.get().getTemplate(template.getMetadata().getOwner()).orElseThrow();
+        EntitySpecV1.Template entityTemplate = this.entityGen.get().getTemplate(template.getMetadata().getOwner()).orElseThrow(()->Util.$("missing entity:"+template.getMetadata().getOwner()+" for event:"+template.getMetadata().getType()));
         if (!template.hasField(entityTemplate.getMetadata().getId())) {
             template.getFieldRefs().add(entityTemplate.getFieldRef(entityTemplate.getMetadata().getId()).orElseThrow());
         }
