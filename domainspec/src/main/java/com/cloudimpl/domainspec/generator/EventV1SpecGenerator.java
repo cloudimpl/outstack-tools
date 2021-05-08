@@ -120,8 +120,8 @@ public class EventV1SpecGenerator extends SpecGenerator {
             Var v = cb.var(fd.getType(), fd.getName()).withAccess(AccessLevel.PRIVATE).withFinal();
             if(ids.contains(fd.getName()))
             {
-                v.withAnnotation(NotEmpty.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be empty or null in "+entityTemplate.getMetadata().getType()+" event\")")
-                        .withAnnotation(NotBlank.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be blank in "+entityTemplate.getMetadata().getType()+" event\")");
+                v.withAnnotation(NotEmpty.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be empty or null in "+template.getMetadata().getType()+" event\")")
+                        .withAnnotation(NotBlank.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be blank in "+template.getMetadata().getType()+" event\")");
             }
             v.end();
             ctor.stmt().append("this." + fd.getName() + " = " + fd.getName()).end();
