@@ -216,7 +216,7 @@ public class EntityV1SpecGenerator extends SpecGenerator {
             caseBlock.stmt().append("applyEvent((" + stmt.getEvt() + ") event)").end();
             caseBlock.stmt().append("break").end();
         }
-        sb.createDefault().stmt().append("throw new DomainEventException(\"unhandled event:\"+event.getClass().getName())").end();
+        sb.createDefault().stmt().append("throw new DomainEventException(DomainEventException.ErrorCode.UNHANDLED_EVENT,\"unhandled event:\"+event.getClass().getName())").end();
     }
 
     private void generateTenantIdFunction(ClassBlock cb) {
