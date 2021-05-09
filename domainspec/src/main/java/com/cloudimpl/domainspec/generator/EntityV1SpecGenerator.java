@@ -111,7 +111,12 @@ public class EntityV1SpecGenerator extends SpecGenerator {
                 .withAccess(AccessLevel.PUBLIC);
         cb.withAnnotation("EntityMeta(plural=\"" + template.getMetadata().getPlural() + "\",version=\"" + entityVersion + "\")");
         createConstructor(cb, template, rootTemplate);
-        if (template.getMetadata().isTenant() || (rootTemplate != null && rootTemplate.getMetadata().isTenant())) {
+        if(!template.getMetadata().isRoot()){
+            if(template.getMetadata().isTenant() && !rootTemplate.getMetadata().isTenant()){
+                throw new RuntimeException("Child  entity '" + template.getMetadata().getType() + "' tenant enable for non tenant root entity '"+rootTemplate.getMetadata().getType() +"'");
+            }
+        }
+        if ((template.getMetadata().isTenant() && template.getMetadata().isRoot()) || (rootTemplate != null && rootTemplate.getMetadata().isTenant())) {
             cb.implement(generator.getTenantBaseName()).withImports(generator.getSpecPackageName() + "." + generator.getTenantBaseName());
             generateTenantIdFunction(cb);
 
