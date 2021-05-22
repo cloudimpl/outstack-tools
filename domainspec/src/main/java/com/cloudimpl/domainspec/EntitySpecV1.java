@@ -55,6 +55,14 @@ public class EntitySpecV1 implements Spec {
             return metdata;
         }
 
+        public String getKey() {
+            if (getMetadata().isRoot()) {
+                return getMetadata().getType();
+            } else {
+                return getMetadata().rootEntity().get() + "#" + getMetadata().getType();
+            }
+        }
+
         public List<FieldDefRefV1> getFieldRefs() {
             return fieldRefs;
         }

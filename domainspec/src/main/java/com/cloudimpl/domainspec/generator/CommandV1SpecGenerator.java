@@ -75,7 +75,7 @@ public class CommandV1SpecGenerator extends SpecGenerator {
        
         ClassBuilder builder = new ClassBuilder();
         ClassBlock cb = builder.createClass(template.getMetadata().getType())
-                .withPackageName(spec.getMetaData().orElseThrow().getNamespace().orElseThrow() + template.getMetadata().getModule().map(s -> "." + s).orElse(""))
+                .withPackageName(spec.getMetaData().orElseThrow().getNamespace().orElseThrow() + template.getMetadata().getModule().map(s -> "." + s).orElseGet(()->""))
                 .extend(generator.getCommandBaseName())
                 .withImports(generator.getSpecPackageName() + "." + generator.getCommandBaseName())
                 .withAccess(AccessLevel.PUBLIC);

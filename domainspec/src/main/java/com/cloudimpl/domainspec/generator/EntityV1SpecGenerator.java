@@ -103,7 +103,7 @@ public class EntityV1SpecGenerator extends SpecGenerator {
         }
         ClassBuilder builder = new ClassBuilder();
         ClassBlock cb = builder.createClass(template.getMetadata().getType())
-                .withPackageName(spec.getMetaData().orElseThrow().getNamespace().orElseThrow() + template.getMetadata().getModule().map(s -> "." + s).orElse(""))
+                .withPackageName(spec.getMetaData().orElseThrow().getNamespace().orElseThrow() + template.getMetadata().getModule().map(s -> "." + s).orElseGet(()->""))
                 .extend((template.getMetadata().isRoot() ? generator.getRootEntityBaseName() : generator.getChildEntityBaseName()) + ((rootTemplate != null) ? ("<" + rootTemplate.getMetadata().getType() + ">") : ""))
                 .withImports(template.getMetadata().isRoot() ? generator.getSpecPackageName() + "." + generator.getRootEntityBaseName() : generator.getSpecPackageName() + "." + generator.getChildEntityBaseName())
                 .withImports(generator.getSpecPackageName() + ".EntityMeta")
