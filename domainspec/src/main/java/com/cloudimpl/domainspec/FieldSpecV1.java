@@ -112,7 +112,7 @@ public class FieldSpecV1 implements Spec {
         public FieldDef(String name, String type, FieldMetaDataV1 metadata,String namespace) {
             this.name = name;
             this.type = type;
-            this.metadata = metadata;
+            this.metadata = metadata == null ? new FieldMetaDataV1(null, 0, false):metadata;
             this.namespace = namespace;
         }
 
@@ -133,7 +133,12 @@ public class FieldSpecV1 implements Spec {
         {
             return Optional.ofNullable(this.namespace);
         }
-                
+
+        public void setMetadata(FieldMetaDataV1 metadata) {
+            this.metadata = metadata;
+        }
+        
+        
         public boolean isCustomType() {
             switch (type) {
                 case "string":
@@ -157,7 +162,8 @@ public class FieldSpecV1 implements Spec {
 
         public FieldDef merge(FieldDefRefV1 ref) {
             FieldDef def = clone();
-            def.metadata().map(meta -> meta.merge(ref.metadata()));
+            
+            def.metadata().map(meta -> meta.merge(ref.metadata())).ifPresent(meta->def.setMetadata(meta));
             return def;
         }
 

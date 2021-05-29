@@ -38,7 +38,15 @@ public class FieldDefRefV1 {
             return new FieldDefRefV1(el.getAsString(), null);
         } else {
             JsonObject obj = el.getAsJsonObject();
-            FieldMetaDataV1 metdata = GsonCodec.decode(FieldMetaDataV1.class, obj.toString());
+            FieldMetaDataV1 metdata;
+            if(obj.get("metadata") != null)
+            {
+                metdata = GsonCodec.decode(FieldMetaDataV1.class, obj.get("metadata").toString());
+            }
+            else
+            {
+                metdata = GsonCodec.decode(FieldMetaDataV1.class, obj.toString()); 
+            }
             return new FieldDefRefV1(obj.get("name").getAsString(), metdata);
         }
     }
