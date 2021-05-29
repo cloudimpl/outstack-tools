@@ -15,9 +15,10 @@ public class FieldMetaDataV1 {
 
     private String desc;
     private int maxLen;
-
-    public FieldMetaDataV1(String desc, int maxLen) {
+    private boolean required;
+    public FieldMetaDataV1(String desc, int maxLen,boolean required) {
         this.desc = desc;
+        this.required = required;
         this.maxLen = maxLen;
     }
 
@@ -29,6 +30,10 @@ public class FieldMetaDataV1 {
         return maxLen;
     }
 
+    public boolean isRequired() {
+        return required;
+    }
+
     public FieldMetaDataV1 merge(Optional<FieldMetaDataV1> other) {
 
         FieldMetaDataV1 newMeta = clone();
@@ -37,17 +42,20 @@ public class FieldMetaDataV1 {
         }
         newMeta.desc = other.get().desc;
         newMeta.maxLen = other.get().maxLen;
+        newMeta.required = other.get().required;
         return newMeta;
     }
 
     @Override
     public FieldMetaDataV1 clone() {
-        return new FieldMetaDataV1(desc, maxLen);
+        return new FieldMetaDataV1(desc, maxLen,required);
     }
 
     @Override
     public String toString() {
-        return "MetaData{" + "desc=" + desc + ", maxLen=" + maxLen + '}';
+        return "FieldMetaDataV1{" + "desc=" + desc + ", maxLen=" + maxLen + ", required=" + required + '}';
     }
+
+    
 
 }

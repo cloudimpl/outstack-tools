@@ -109,7 +109,7 @@ public class EventV1SpecGenerator extends SpecGenerator {
                 .extend(generator.getEventBaseName() + "<" + entityTemplate.getMetadata().getType() + ">")
                 .withImports(generator.getSpecPackageName() + "." + generator.getEventBaseName())
                 .withImports(generator.getSpecPackageName() + "." + generator.getEventBaseName())
-                .withImports(NotEmpty.class.getName(),NotBlank.class.getName())
+                .withImports(NotEmpty.class.getName(), NotBlank.class.getName())
                 .withAccess(AccessLevel.PUBLIC);
 
         List<FieldDefRefV1> fieldRefs = template.getFieldRefs();
@@ -118,10 +118,13 @@ public class EventV1SpecGenerator extends SpecGenerator {
         ConstructorBlock ctor = cb.createConstructor(params).withAccess(AccessLevel.PUBLIC);
         fieldRefs.stream().map(ref -> map.get(ref.getName())).forEach(fd -> {
             Var v = cb.var(fd.getType(), fd.getName()).withAccess(AccessLevel.PRIVATE).withFinal();
-            if(ids.contains(fd.getName()))
-            {
-                v.withAnnotation(NotEmpty.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be empty or null in "+template.getMetadata().getType()+" event\")")
-                        .withAnnotation(NotBlank.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be blank in "+template.getMetadata().getType()+" event\")");
+            if (ids.contains(fd.getName())) {
+                v.withAnnotation(NotEmpty.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be empty or null in " + template.getMetadata().getType() + " event\")")
+                        .withAnnotation(NotBlank.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be blank in " + template.getMetadata().getType() + " event\")");
+            }
+            if (fd.metadata().isPresent() && fd.metadata().get().isRequired()) {
+                v.withAnnotation(NotEmpty.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be empty or null in " + template.getMetadata().getType() + " event\")")
+                        .withAnnotation(NotBlank.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be blank in " + template.getMetadata().getType() + " event\")");
             }
             v.end();
             ctor.stmt().append("this." + fd.getName() + " = " + fd.getName()).end();

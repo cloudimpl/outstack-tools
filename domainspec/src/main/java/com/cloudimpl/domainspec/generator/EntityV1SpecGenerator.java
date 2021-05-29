@@ -103,22 +103,29 @@ public class EntityV1SpecGenerator extends SpecGenerator {
         }
         ClassBuilder builder = new ClassBuilder();
         ClassBlock cb = builder.createClass(template.getMetadata().getType())
-                .withPackageName(spec.getMetaData().orElseThrow().getNamespace().orElseThrow() + template.getMetadata().getModule().map(s -> "." + s).orElseGet(()->""))
+                .withPackageName(spec.getMetaData().orElseThrow().getNamespace().orElseThrow() + template.getMetadata().getModule().map(s -> "." + s).orElseGet(() -> ""))
                 .extend((template.getMetadata().isRoot() ? generator.getRootEntityBaseName() : generator.getChildEntityBaseName()) + ((rootTemplate != null) ? ("<" + rootTemplate.getMetadata().getType() + ">") : ""))
                 .withImports(template.getMetadata().isRoot() ? generator.getSpecPackageName() + "." + generator.getRootEntityBaseName() : generator.getSpecPackageName() + "." + generator.getChildEntityBaseName())
                 .withImports(generator.getSpecPackageName() + ".EntityMeta")
-                .withImports(NotBlank.class.getName(),NotEmpty.class.getName())
+                .withImports(NotBlank.class.getName(), NotEmpty.class.getName())
                 .withAccess(AccessLevel.PUBLIC);
         cb.withAnnotation("EntityMeta(plural=\"" + template.getMetadata().getPlural() + "\",version=\"" + entityVersion + "\")");
         createConstructor(cb, template, rootTemplate);
-        if(!template.getMetadata().isRoot()){
-            if(template.getMetadata().isTenant() && !rootTemplate.getMetadata().isTenant()){
-                throw new RuntimeException("Child  entity '" + template.getMetadata().getType() + "' tenant enable for non tenant root entity '"+rootTemplate.getMetadata().getType() +"'");
+        if (!template.getMetadata().isRoot()) {
+            if (template.getMetadata().isTenant() && !rootTemplate.getMetadata().isTenant()) {
+                throw new RuntimeException("Child  entity '" + template.getMetadata().getType() + "' tenant enable for non tenant root entity '" + rootTemplate.getMetadata().getType() + "'");
             }
         }
         if ((template.getMetadata().isTenant() && template.getMetadata().isRoot()) || (rootTemplate != null && rootTemplate.getMetadata().isTenant())) {
-            cb.implement(generator.getTenantBaseName()).withImports(generator.getSpecPackageName() + "." + generator.getTenantBaseName());
-            generateTenantIdFunction(cb);
+            boolean optional = (template.getMetadata().isTenant() && template.getMetadata().isRoot())?template.getMetadata().isTenantOptional() : rootTemplate.getMetadata().isTenantOptional();
+            if (optional) {
+             //   cb.withImports(Optional.class.getName());
+                cb.implement(generator.getTenantBaseName() + "Optional").withImports(generator.getSpecPackageName() + "." + generator.getTenantBaseName() + "Optional");
+                generateTenantIdFunction(cb,true);
+            } else {
+                cb.implement(generator.getTenantBaseName()).withImports(generator.getSpecPackageName() + "." + generator.getTenantBaseName());
+                generateTenantIdFunction(cb,false);
+            }
 
         }
         map.values().stream().filter(fd -> fd.getNamespace().isPresent()).forEach(fd -> cb.withImports(fd.getNamespace().get() + "." + fd.getType()));
@@ -127,13 +134,18 @@ public class EntityV1SpecGenerator extends SpecGenerator {
             Var v = cb.var(fd.getType(), fd.getName()).withAccess(AccessLevel.PRIVATE);
             if (fd.getName().equals(template.getMetadata().getId())) {
                 v.withFinal();
-                v.withAnnotation(NotEmpty.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be empty or null in "+template.getMetadata().getType()+" entity\")");
-                v.withAnnotation(NotBlank.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be blank in "+template.getMetadata().getType()+" entity\")");
+                v.withAnnotation(NotEmpty.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be empty or null in " + template.getMetadata().getType() + " entity\")");
+                v.withAnnotation(NotBlank.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be blank in " + template.getMetadata().getType() + " entity\")");
+            }
+            if(fd.metadata().isPresent() && fd.metadata().get().isRequired())
+            {
+                v.withAnnotation(NotEmpty.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be empty or null in " + template.getMetadata().getType() + " entity\")");
+                v.withAnnotation(NotBlank.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be blank in " + template.getMetadata().getType() + " entity\")");
             }
             if (rootTemp != null && fd.getName().equals(rootTemp.getMetadata().getId())) {
                 v.withFinal();
-                v.withAnnotation(NotEmpty.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be empty or null in "+template.getMetadata().getType()+" entity\")");
-                v.withAnnotation(NotBlank.class.getSimpleName()+"(message = \""+fd.getName()+" field cannot be blank in "+template.getMetadata().getType()+" entity\")");
+                v.withAnnotation(NotEmpty.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be empty or null in " + template.getMetadata().getType() + " entity\")");
+                v.withAnnotation(NotBlank.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be blank in " + template.getMetadata().getType() + " entity\")");
             }
             v.end();
             cb.createGetter(v);
@@ -224,9 +236,17 @@ public class EntityV1SpecGenerator extends SpecGenerator {
         sb.createDefault().stmt().append("throw new DomainEventException(DomainEventException.ErrorCode.UNHANDLED_EVENT,\"unhandled event:\"+event.getClass().getName())").end();
     }
 
-    private void generateTenantIdFunction(ClassBlock cb) {
+    private void generateTenantIdFunction(ClassBlock cb,boolean optional) {
         Var v = cb.var("String", "tenantId").withAccess(AccessLevel.PRIVATE).withFinal().end();
-        cb.createGetter(v).withAnnotation(Override.class.getSimpleName());
+        if(!optional)
+        {
+            cb.createGetter(v).withAnnotation(Override.class.getSimpleName());
+        }
+        else
+        {
+            cb.createGetter(v).withAnnotation(Override.class.getSimpleName());
+        }
+        
     }
 
     private void generateFile(ClassBlock cb) {

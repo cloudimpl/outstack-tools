@@ -88,7 +88,7 @@ public class EntitySpecV1 implements Spec {
             private String type;
             private String module;
             private String name;
-            private boolean tenant;
+            private String tenant;
             private String plural;
             private String version;
             private String id;
@@ -120,9 +120,14 @@ public class EntitySpecV1 implements Spec {
             }
 
             public boolean isTenant() {
-                return tenant;
+                return tenant != null && (tenant.equals("required") || tenant.equals("optional"));
             }
 
+            public boolean isTenantOptional()
+            {
+                return tenant != null && tenant.equals("optional");
+            }
+            
             public Optional<String> rootEntity() {
                 return Optional.ofNullable(rootEntity);
             }
