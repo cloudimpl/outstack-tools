@@ -92,6 +92,7 @@ public class EntitySpecV1 implements Spec {
             private String plural;
             private String version;
             private String id;
+            private boolean idIgnoreCase;
             private String rootEntity;
 
             @Override
@@ -115,6 +116,11 @@ public class EntitySpecV1 implements Spec {
                 return id;
             }
 
+            public boolean isIdIgnoreCase() {
+                return idIgnoreCase;
+            }
+
+            
             public boolean isRoot() {
                 return !rootEntity().isPresent();
             }

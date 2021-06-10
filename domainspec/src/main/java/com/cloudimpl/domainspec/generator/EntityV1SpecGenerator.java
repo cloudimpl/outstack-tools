@@ -107,6 +107,7 @@ public class EntityV1SpecGenerator extends SpecGenerator {
                 .extend((template.getMetadata().isRoot() ? generator.getRootEntityBaseName() : generator.getChildEntityBaseName()) + ((rootTemplate != null) ? ("<" + rootTemplate.getMetadata().getType() + ">") : ""))
                 .withImports(template.getMetadata().isRoot() ? generator.getSpecPackageName() + "." + generator.getRootEntityBaseName() : generator.getSpecPackageName() + "." + generator.getChildEntityBaseName())
                 .withImports(generator.getSpecPackageName() + ".EntityMeta")
+                .withImports(generator.getSpecPackageName() + ".Id")
                 .withImports(NotBlank.class.getName(), NotEmpty.class.getName())
                 .withAccess(AccessLevel.PUBLIC);
         cb.withAnnotation("EntityMeta(plural=\"" + template.getMetadata().getPlural() + "\",version=\"" + entityVersion + "\")");
@@ -134,6 +135,13 @@ public class EntityV1SpecGenerator extends SpecGenerator {
             Var v = cb.var(fd.getType(), fd.getName()).withAccess(AccessLevel.PRIVATE);
             if (fd.getName().equals(template.getMetadata().getId())) {
                 v.withFinal();
+                v.withAnnotation("Id");
+                if(template.getMetadata().isIdIgnoreCase())
+                {
+                    cb.withImports(generator.getSpecPackageName() + ".IgnoreCase");
+                    v.withAnnotation("IgnoreCase");
+                    
+                }
                 v.withAnnotation(NotEmpty.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be empty or null in " + template.getMetadata().getType() + " entity\")");
                 v.withAnnotation(NotBlank.class.getSimpleName() + "(message = \"" + fd.getName() + " field cannot be blank in " + template.getMetadata().getType() + " entity\")");
             }
